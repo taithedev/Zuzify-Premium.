@@ -1,6 +1,6 @@
 #include "system_stats.hpp"
 #include <windows.h>
-#include <dxgi.h>
+#include <dxgi1_4.h>
 #include <wrl/client.h>
 #include <algorithm>
 
