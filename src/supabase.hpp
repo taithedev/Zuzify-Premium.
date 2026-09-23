@@ -23,16 +23,24 @@ struct PremiumSettings {
     int glass = 72;
 };
 
+struct CreditState {
+    int balance = 0;
+    int lifetimeEarned = 0;
+};
+
 class SupabaseClient {
 public:
     SupabaseClient(std::string url, std::string key);
 
     AuthSession SignIn(const std::string& email, const std::string& password);
     AuthSession SignUp(const std::string& email, const std::string& password);
+    AuthSession RefreshSession(const std::string& refreshToken);
     PremiumState GetPremium(const std::string& accessToken, const std::string& userId);
     PremiumSettings GetSettings(const std::string& accessToken, const std::string& userId);
+    CreditState GetCredits(const std::string& accessToken, const std::string& userId);
     bool SaveSettings(const std::string& accessToken, const std::string& userId, const PremiumSettings& settings, std::string& error);
     bool AdminAction(const std::string& accessToken, const std::string& userId, const std::string& action, std::string& error);
+    bool AdminCreditAction(const std::string& accessToken, const std::string& userId, int amount, const std::string& reason, std::string& error);
     bool IsAdmin(const std::string& accessToken, const std::string& userId);
 
 private:
@@ -45,6 +53,7 @@ private:
         const std::string& body,
         const std::string& accessToken,
         long& status,
-        std::string& error
+        std::string& error,
+        const std::string& extraHeaders = ""
     );
 };
