@@ -1,0 +1,16 @@
+name: Build Zuzify Premium
+
+on:
+  push:
+    branches: ["main"]
+  pull_request:
+
+jobs:
+  build:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Configure
+        run: cmake -S . -B build -DZUZIFY_VERSION=ci
+      - name: Build
+        run: cmake --build build --config Release --parallel
