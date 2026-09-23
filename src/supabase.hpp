@@ -31,7 +31,7 @@ public:
     AuthSession SignUp(const std::string& email, const std::string& password);
     PremiumState GetPremium(const std::string& accessToken, const std::string& userId);
     PremiumSettings GetSettings(const std::string& accessToken, const std::string& userId);
-    bool SaveSettings(const std::string& accessToken, const PremiumSettings& settings, std::string& error);
+    bool SaveSettings(const std::string& accessToken, const std::string& userId, const PremiumSettings& settings, std::string& error);
     bool AdminAction(const std::string& accessToken, const std::string& userId, const std::string& action, std::string& error);
     bool IsAdmin(const std::string& accessToken, const std::string& userId);
 
