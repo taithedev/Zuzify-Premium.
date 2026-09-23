@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.24)
-project(ZuzifyPremium LANGUAGES CXX)
+project(ZuzifyPremium VERSION 1.0.0 LANGUAGES CXX)
 
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -33,6 +33,10 @@ add_executable(ZuzifyPremium WIN32
   src/app.hpp
   src/supabase.cpp
   src/supabase.hpp
+  src/system_stats.cpp
+  src/system_stats.hpp
+  src/updater.cpp
+  src/updater.hpp
   src/theme.hpp
   ${IMGUI_DIR}/imgui.cpp
   ${IMGUI_DIR}/imgui_draw.cpp
@@ -47,12 +51,18 @@ target_include_directories(ZuzifyPremium PRIVATE
   ${CMAKE_CURRENT_SOURCE_DIR}/src
 )
 
+target_compile_definitions(ZuzifyPremium PRIVATE
+  ZUZIFY_VERSION="${PROJECT_VERSION}"
+)
+
 target_link_libraries(ZuzifyPremium PRIVATE
   d3d11
   dxgi
   dwmapi
   winhttp
   version
+  crypt32
+  shell32
 )
 
 target_link_libraries(ZuzifyPremium PRIVATE nlohmann_json::nlohmann_json)
