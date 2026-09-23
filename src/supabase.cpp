@@ -154,7 +154,7 @@ PremiumState SupabaseClient::GetPremium(const std::string& accessToken, const st
     out.status = row.value("status", "inactive");
     out.plan = row.value("plan", "premium");
     out.expiresAt = row.value("expires_at", "");
-    out.active = out.status == "active" && (out.expiresAt.empty() || out.expiresAt > "9999");
+    out.active = out.status == "active";
     return out;
 }
 
