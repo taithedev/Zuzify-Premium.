@@ -1,5 +1,6 @@
 cmake_minimum_required(VERSION 3.24)
 project(ZuzifyPremium VERSION 1.0.0 LANGUAGES CXX)
+set(ZUZIFY_VERSION "1.0.0" CACHE STRING "Zuzify Premium application version")
 
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -52,7 +53,7 @@ target_include_directories(ZuzifyPremium PRIVATE
 )
 
 target_compile_definitions(ZuzifyPremium PRIVATE
-  ZUZIFY_VERSION="${PROJECT_VERSION}"
+  ZUZIFY_VERSION="${ZUZIFY_VERSION}"
 )
 
 target_link_libraries(ZuzifyPremium PRIVATE
