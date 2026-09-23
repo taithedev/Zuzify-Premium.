@@ -19,6 +19,10 @@ void ZuzifyApp::RefreshAccount() {
     if (!session_.ok) return;
     premium_ = supabase_.GetPremium(session_.accessToken, session_.userId);
     settings_ = supabase_.GetSettings(session_.accessToken, session_.userId);
+    unsigned int r = 0x8b, g = 0x5c, b = 0xf6;
+    if (settings_.accent.size() == 7 && settings_.accent[0] == '#')
+        std::sscanf(settings_.accent.c_str() + 1, "%02x%02x%02x", &r, &g, &b);
+    accentColor_ = ImVec4(r / 255.0f, g / 255.0f, b / 255.0f, 1.0f);
     isAdmin_ = supabase_.IsAdmin(session_.accessToken, session_.userId);
 }
 
