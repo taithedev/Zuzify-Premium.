@@ -1,6 +1,7 @@
 #include "app.hpp"
 #include "theme.hpp"
 #include "imgui.h"
+#include <cstdio>
 #include <cstring>
 
 static ImVec4 Purple() { return ImVec4(0.65f, 0.38f, 0.98f, 1.0f); }
@@ -17,11 +18,15 @@ void ZuzifyApp::SetStatus(const std::string& text) {
 
 void ZuzifyApp::RefreshAccount() {
     if (!session_.ok) return;
+
     premium_ = supabase_.GetPremium(session_.accessToken, session_.userId);
     settings_ = supabase_.GetSettings(session_.accessToken, session_.userId);
+
     unsigned int r = 0x8b, g = 0x5c, b = 0xf6;
-    if (settings_.accent.size() == 7 && settings_.accent[0] == '#')
+    if (settings_.accent.size() == 7 && settings_.accent[0] == '#') {
         std::sscanf(settings_.accent.c_str() + 1, "%02x%02x%02x", &r, &g, &b);
+    }
+
     accentColor_ = ImVec4(r / 255.0f, g / 255.0f, b / 255.0f, 1.0f);
     isAdmin_ = supabase_.IsAdmin(session_.accessToken, session_.userId);
 }
@@ -29,6 +34,8 @@ void ZuzifyApp::RefreshAccount() {
 void ZuzifyApp::SignOut() {
     session_ = {};
     premium_ = {};
+    settings_ = {};
+    accentColor_ = Purple();
     isAdmin_ = false;
     page_ = 0;
     SetStatus("Signed out.");
@@ -43,15 +50,15 @@ void ZuzifyApp::RenderLogin() {
     auto* draw = ImGui::GetWindowDrawList();
     const ImVec2 p = ImGui::GetWindowPos();
     const ImVec2 s = ImGui::GetWindowSize();
-    draw->AddRectFilled(p, ImVec2(p.x+s.x,p.y+s.y), IM_COL32(12,12,18,248), 22.0f);
-    draw->AddCircleFilled(ImVec2(p.x+s.x-35,p.y+35), 120.0f, IM_COL32(105,55,180,18));
+    draw->AddRectFilled(p, ImVec2(p.x + s.x, p.y + s.y), IM_COL32(12, 12, 18, 248), 22.0f);
+    draw->AddCircleFilled(ImVec2(p.x + s.x - 35, p.y + 35), 120.0f, IM_COL32(105, 55, 180, 18));
 
     ImGui::Dummy(ImVec2(0, 18));
     ImGui::TextColored(Purple(), "ZUZIFY");
     ImGui::SameLine();
     ImGui::TextUnformatted("PREMIUM");
     ImGui::Spacing();
-    ImGui::TextColored(ImVec4(.55f,.55f,.64f,1), signingUp_ ? "Create your Premium account" : "Welcome back");
+    ImGui::TextColored(ImVec4(.55f, .55f, .64f, 1), signingUp_ ? "Create your Premium account" : "Welcome back");
     ImGui::Dummy(ImVec2(0, 20));
 
     ImGui::TextUnformatted("Email");
@@ -81,8 +88,9 @@ void ZuzifyApp::RenderLogin() {
     }
 
     ImGui::Dummy(ImVec2(0, 10));
-    if (ImGui::Button(signingUp_ ? "Already have an account" : "Create a new account", ImVec2(-1, 38)))
+    if (ImGui::Button(signingUp_ ? "Already have an account" : "Create a new account", ImVec2(-1, 38))) {
         signingUp_ = !signingUp_;
+    }
 
     ImGui::Dummy(ImVec2(0, 18));
     ImGui::TextWrapped("%s", statusMessage_);
@@ -96,98 +104,135 @@ void ZuzifyApp::RenderDashboard() {
     ImGui::Spacing();
 
     ImGui::BeginChild("hero", ImVec2(0, 170), false);
-    ImGui::TextColored(Purple(), "Zuzify Premium");
+    ImGui::TextColored(accentColor_, "Zuzify Premium");
     ImGui::Text("Your account, your workspace.");
     ImGui::Spacing();
+
     if (premium_.active) {
-        ImGui::TextColored(ImVec4(.45f,1,.70f,1), "Premium is active");
+        ImGui::TextColored(ImVec4(.45f, 1, .70f, 1), "Premium is active");
         ImGui::TextWrapped("Your Premium controls and customization settings are available.");
     } else {
-        ImGui::TextColored(ImVec4(1,.72f,.35f,1), "Premium is not active");
+        ImGui::TextColored(ImVec4(1, .72f, .35f, 1), "Premium is not active");
         ImGui::TextWrapped("The account is connected, but Premium access has not been enabled.");
     }
+
     ImGui::EndChild();
 
     ImGui::Spacing();
     ImGui::BeginChild("cards", ImVec2(0, 0), false);
     ImGui::BeginGroup();
-    ImGui::TextColored(Purple(), "CUSTOMIZATION");
+    ImGui::TextColored(accentColor_, "CUSTOMIZATION");
     ImGui::Text("Themes, glass intensity and accent controls.");
     ImGui::EndGroup();
+
     ImGui::SameLine(0, 80);
     ImGui::BeginGroup();
-    ImGui::TextColored(Purple(), "ACCOUNT");
+    ImGui::TextColored(accentColor_, "ACCOUNT");
     ImGui::Text("Secure account and Premium state.");
     ImGui::EndGroup();
+
     ImGui::Spacing();
     ImGui::TextDisabled("No AI features. No badge system. Separate from Zuzify Socials.");
     ImGui::EndChild();
 }
 
 void ZuzifyApp::RenderThemes() {
-    ImGui::TextColored(Purple(), "Appearance");
+    ImGui::TextColored(accentColor_, "Appearance");
     ImGui::Spacing();
 
     ImGui::BeginChild("appearance", ImVec2(0, 0), false);
+
     ImGui::TextUnformatted("Glass intensity");
-    ImGui::SliderInt("##glass", &settings_.glass, 0, 100, "%d%%");
+    if (ImGui::SliderInt("##glass", &settings_.glass, 0, 100, "%d%%")) {
+        std::string error;
+        if (!supabase_.SaveSettings(session_.accessToken, session_.userId, settings_, error) && !error.empty()) {
+            SetStatus(error);
+        }
+    }
+
     ImGui::Spacing();
     ImGui::TextUnformatted("Accent");
-    ImGui::ColorEdit4("##accent", reinterpret_cast<float*>(&ImVec4{0.65f,0.38f,0.98f,1.0f}),
-        ImGuiColorEditFlags_NoInputs);
+    if (ImGui::ColorEdit4("##accent", reinterpret_cast<float*>(&accentColor_), ImGuiColorEditFlags_NoInputs)) {
+        unsigned int r = static_cast<unsigned int>(accentColor_.x * 255.0f);
+        unsigned int g = static_cast<unsigned int>(accentColor_.y * 255.0f);
+        unsigned int b = static_cast<unsigned int>(accentColor_.z * 255.0f);
+
+        char hex[8]{};
+        std::snprintf(hex, sizeof(hex), "#%02X%02X%02X", r, g, b);
+        settings_.accent = hex;
+
+        std::string error;
+        if (!supabase_.SaveSettings(session_.accessToken, session_.userId, settings_, error) && !error.empty()) {
+            SetStatus(error);
+        }
+    }
+
     ImGui::Spacing();
-    ImGui::TextDisabled("Theme changes are stored per account once connected to the settings endpoint.");
+    ImGui::TextDisabled("Theme settings are stored per Premium account.");
     ImGui::EndChild();
 }
 
 void ZuzifyApp::RenderAccount() {
-    ImGui::TextColored(Purple(), "Account");
+    ImGui::TextColored(accentColor_, "Account");
     ImGui::Spacing();
+
     ImGui::BeginChild("account", ImVec2(0, 0), false);
     ImGui::Text("Email");
-    ImGui::TextColored(ImVec4(.65f,.65f,.72f,1), "%s", session_.email.c_str());
+    ImGui::TextColored(ImVec4(.65f, .65f, .72f, 1), "%s", session_.email.c_str());
+
     ImGui::Spacing();
     ImGui::Text("User ID");
-    ImGui::TextColored(ImVec4(.65f,.65f,.72f,1), "%s", session_.userId.c_str());
+    ImGui::TextColored(ImVec4(.65f, .65f, .72f, 1), "%s", session_.userId.c_str());
+
     ImGui::Spacing();
     ImGui::Text("Plan");
-    ImGui::TextColored(Purple(), "%s", premium_.active ? premium_.plan.c_str() : "Free");
+    ImGui::TextColored(accentColor_, "%s", premium_.active ? premium_.plan.c_str() : "Free");
+
     ImGui::Spacing();
     if (ImGui::Button("Refresh account", ImVec2(170, 40))) {
         RefreshAccount();
         SetStatus("Account refreshed.");
     }
+
     ImGui::SameLine();
-    if (ImGui::Button("Sign out", ImVec2(120, 40))) SignOut();
+    if (ImGui::Button("Sign out", ImVec2(120, 40))) {
+        SignOut();
+    }
+
     ImGui::Spacing();
     ImGui::TextWrapped("%s", statusMessage_);
     ImGui::EndChild();
 }
 
 void ZuzifyApp::RenderAdmin() {
-    ImGui::TextColored(Purple(), "Premium Management");
+    ImGui::TextColored(accentColor_, "Premium Management");
     ImGui::Spacing();
+
     ImGui::BeginChild("admin", ImVec2(0, 0), false);
     ImGui::TextDisabled("Admin actions are authorized by the Supabase Edge Function.");
     ImGui::Spacing();
+
     ImGui::TextUnformatted("Target user ID");
     ImGui::InputText("##target", targetUser_, sizeof(targetUser_));
     ImGui::Spacing();
 
     if (ImGui::Button("Grant Premium", ImVec2(180, 42))) {
         std::string error;
-        if (supabase_.AdminAction(session_.accessToken, targetUser_, "grant", error))
+        if (supabase_.AdminAction(session_.accessToken, targetUser_, "grant", error)) {
             SetStatus("Premium granted.");
-        else
+        } else {
             SetStatus(error.empty() ? "Grant failed." : error);
+        }
     }
+
     ImGui::SameLine();
     if (ImGui::Button("Revoke Premium", ImVec2(180, 42))) {
         std::string error;
-        if (supabase_.AdminAction(session_.accessToken, targetUser_, "revoke", error))
+        if (supabase_.AdminAction(session_.accessToken, targetUser_, "revoke", error)) {
             SetStatus("Premium revoked.");
-        else
+        } else {
             SetStatus(error.empty() ? "Revoke failed." : error);
+        }
     }
 
     ImGui::Spacing();
@@ -207,20 +252,25 @@ void ZuzifyApp::Render() {
     ImGui::Begin("Zuzify Premium", nullptr, ImGuiWindowFlags_NoCollapse);
 
     ImGui::BeginChild("sidebar", ImVec2(190, 0), true);
-    ImGui::TextColored(Purple(), "ZUZIFY");
+    ImGui::TextColored(accentColor_, "ZUZIFY");
     ImGui::TextDisabled("PREMIUM");
     ImGui::Spacing();
 
     const char* pages[] = {"Dashboard", "Themes", "Account"};
     for (int i = 0; i < 3; ++i) {
-        if (ImGui::Selectable(pages[i], page_ == i, 0, ImVec2(0, 42))) page_ = i;
+        if (ImGui::Selectable(pages[i], page_ == i, 0, ImVec2(0, 42))) {
+            page_ = i;
+        }
     }
 
     if (isAdmin_) {
         ImGui::Spacing();
         ImGui::Separator();
         ImGui::Spacing();
-        if (ImGui::Selectable("Admin", page_ == 3, 0, ImVec2(0, 42))) page_ = 3;
+
+        if (ImGui::Selectable("Admin", page_ == 3, 0, ImVec2(0, 42))) {
+            page_ = 3;
+        }
     }
 
     ImGui::SetCursorPosY(ImGui::GetWindowHeight() - 62);
@@ -229,11 +279,12 @@ void ZuzifyApp::Render() {
 
     ImGui::SameLine();
     ImGui::BeginChild("content", ImVec2(0, 0), false);
+
     if (page_ == 0) RenderDashboard();
     else if (page_ == 1) RenderThemes();
     else if (page_ == 2) RenderAccount();
     else RenderAdmin();
-    ImGui::EndChild();
 
+    ImGui::EndChild();
     ImGui::End();
 }
