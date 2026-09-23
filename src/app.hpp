@@ -1,6 +1,7 @@
 #pragma once
 #include "supabase.hpp"
-#include <string>\n#include "imgui.h"
+#include "imgui.h"
+#include <string>
 
 class ZuzifyApp {
 public:
@@ -22,7 +23,8 @@ private:
     char email_[256]{};
     char password_[256]{};
     char targetUser_[64]{};
-    char statusMessage_[512]{};\n    ImVec4 accentColor_{0.65f, 0.38f, 0.98f, 1.0f};
+    char statusMessage_[512]{};
+    ImVec4 accentColor_{0.65f, 0.38f, 0.98f, 1.0f};
 
     void RenderLogin();
     void RenderDashboard();
