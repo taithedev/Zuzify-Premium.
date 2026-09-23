@@ -19,6 +19,14 @@ static std::wstring Widen(const std::string& value) {
     return out;
 }
 
+static std::string Narrow(const std::wstring& value) {
+    if (value.empty()) return {};
+    int size = WideCharToMultiByte(CP_UTF8, 0, value.data(), static_cast<int>(value.size()), nullptr, 0, nullptr, nullptr);
+    std::string out(static_cast<size_t>(size), '\0');
+    WideCharToMultiByte(CP_UTF8, 0, value.data(), static_cast<int>(value.size()), out.data(), size, nullptr, nullptr);
+    return out;
+}
+
 static bool ParseUrl(const std::string& url, URL_COMPONENTSW& parts, wchar_t* host, DWORD hostCount, wchar_t* path, DWORD pathCount) {
     parts = {};
     parts.dwStructSize = sizeof(parts);
@@ -265,7 +273,7 @@ bool AppUpdater::DownloadAndInstall(const UpdateInfo& info, std::string& error) 
     }
 
     const std::wstring tempExe = std::wstring(tempPath) + L"ZuzifyPremiumUpdate.exe";
-    if (!HttpDownload(info.downloadUrl, std::string(tempExe.begin(), tempExe.end()), error)) {
+    if (!HttpDownload(info.downloadUrl, Narrow(tempExe), error)) {
         return false;
     }
 
