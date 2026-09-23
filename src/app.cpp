@@ -20,17 +20,6 @@ static std::wstring ToWide(const std::string& value) {
     return out;
 }
 
-static std::string ToUtf8(const BYTE* data, DWORD size) {
-    if (!data || !size) return {};
-    int outSize = WideCharToMultiByte(CP_UTF8, 0, reinterpret_cast<const wchar_t*>(data),
-        static_cast<int>(size / sizeof(wchar_t)), nullptr, 0, nullptr, nullptr);
-    if (outSize <= 0) return {};
-    std::string out(static_cast<size_t>(outSize), '\0');
-    WideCharToMultiByte(CP_UTF8, 0, reinterpret_cast<const wchar_t*>(data),
-        static_cast<int>(size / sizeof(wchar_t)), out.data(), outSize, nullptr, nullptr);
-    return out;
-}
-
 static std::wstring SessionPath() {
     wchar_t base[MAX_PATH]{};
     if (FAILED(SHGetFolderPathW(nullptr, CSIDL_LOCAL_APPDATA, nullptr, 0, base))) return {};
@@ -145,7 +134,7 @@ void ZuzifyApp::LoadRememberedSession() {
         return;
     }
 
-    const std::string refreshToken = ToUtf8(output.pbData, output.cbData);
+    const std::string refreshToken(reinterpret_cast<const char*>(output.pbData), output.cbData);
     LocalFree(output.pbData);
 
     if (refreshToken.empty()) return;
@@ -375,9 +364,8 @@ void ZuzifyApp::RenderThemes() {
 
     ImGui::Spacing();
     ImGui::TextUnformatted("Glass intensity");
-    if (ImGui::SliderInt("##glass", &settings_.glass, 0, 100, "%d%%") && ImGui::IsItemDeactivatedAfterEdit()) {
-        SaveSettings();
-    }
+    ImGui::SliderInt("##glass", &settings_.glass, 0, 100, "%d%%");
+    if (ImGui::IsItemDeactivatedAfterEdit()) SaveSettings();
 
     ImGui::Spacing();
     ImGui::TextUnformatted("Custom accent");
