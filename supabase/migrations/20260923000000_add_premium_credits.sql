@@ -29,7 +29,8 @@ using (auth.uid() = user_id);
 create or replace function public.set_premium_credits_updated_at()
 returns trigger
 language plpgsql
-as $$
+set search_path = public
+as $
 begin
   new.updated_at = now();
   return new;
